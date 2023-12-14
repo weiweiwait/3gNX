@@ -17,31 +17,39 @@ type User struct {
 */
 // CreateATodo 创建user
 func CreateAUser(user *User) (err error) {
-	err = dao.DB.Create(&user).Error
+	err = dao.DB.Table("users").Create(&user).Error
 	return
 }
 
 func GetAllUser() (userList []*User, err error) {
-	if err = dao.DB.Find(&userList).Error; err != nil {
+	if err = dao.DB.Table("users").Find(&userList).Error; err != nil {
 		return nil, err
 	}
 	return
 }
 
-func FindAUser(username string) (user *User, err error) {
+func FindAUserByName(username string) (user *User, err error) {
 	user = new(User)
-	if err = dao.DB.Debug().Where("username=?", username).First(user).Error; err != nil {
+	if err = dao.DB.Debug().Table("users").Where("username=?", username).First(user).Error; err != nil {
 		return nil, err
 	}
 	return
 }
-
-func UpdateATodo(todo *User) (err error) {
-	err = dao.DB.Save(todo).Error
+func FindAUserByEmail(email string) (user *User, err error) {
+	user = new(User)
+	if err = dao.DB.Debug().Table("users").Where("email=?", email).First(user).Error; err != nil {
+		return nil, err
+	}
 	return
 }
-
+func UpdateUserPasswordByEmail(email string, password string) error {
+	err := dao.DB.Table("users").Where("email = ?", email).Update("password", password).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func DeleteATodo(id string) (err error) {
-	err = dao.DB.Where("id=?", id).Delete(&User{}).Error
+	err = dao.DB.Table("users").Where("id=?", id).Delete(&User{}).Error
 	return
 }

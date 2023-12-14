@@ -4,6 +4,8 @@ import (
 	"3gnx/dao"
 	"3gnx/routers"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,6 +28,9 @@ func main() {
 	}
 	defer dao.Close() // 程序退出关闭数据库连接
 	// 注册路由
+	store := cookie.NewStore([]byte("your-secret-key"))
+	router.Use(sessions.Sessions("session-name", store))
 	r := routers.SetUpRouter()
+	//middles.SetSessionAttribute(,"sss","sss")
 	r.Run(":8080")
 }

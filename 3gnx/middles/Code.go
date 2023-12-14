@@ -22,7 +22,7 @@ type Config struct {
 }
 
 // 发送邮箱验证码
-func SendCode() {
+func SendCode(email string) string {
 	// 读取配置文件
 	configData, err := ioutil.ReadFile("config/config.yaml")
 	if err != nil {
@@ -36,7 +36,7 @@ func SendCode() {
 		log.Fatal("无法解析配置文件:", err)
 	}
 	//发送对象
-	recipient := "2680315178@qq.com"
+	recipient := email
 	// 生成验证码
 	verificationCode := generateVerificationCode()
 
@@ -58,10 +58,10 @@ func SendCode() {
 	err = dialer.DialAndSend(message)
 	if err != nil {
 		fmt.Println("发送邮件失败:", err)
-		return
+		return ""
 	}
 
-	fmt.Println("验证码邮件已发送")
+	return verificationCode
 }
 
 func generateVerificationCode() string {
@@ -69,7 +69,7 @@ func generateVerificationCode() string {
 	rand.Seed(time.Now().UnixNano())
 
 	// 生成6位验证码
-	code := rand.Intn(900000) + 100000
+	code := rand.Intn(899999) + 100000
 
 	// 将验证码转换为字符串
 	codeStr := strconv.Itoa(code)

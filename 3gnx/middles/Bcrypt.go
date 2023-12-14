@@ -12,7 +12,6 @@ func Encode(password string) string {
 	if err != nil {
 		fmt.Println("加密密码时发生错误:", err)
 	}
-
 	// 将哈希值转换为字符串并打印
 	hashedPasswordString := string(hashedPassword)
 	return hashedPasswordString
@@ -25,4 +24,15 @@ func Encode(password string) string {
 	//}
 	//
 	//fmt.Println("密码验证成功！")
+	//mimi := "dfhyuikgfhUKGhkghkgighkkhjhjk"
+	//mimei := "fandasgjldkshfjlSHLFjhsjflkj//'sd;lfk;l"
+	//newpassword := mimi + password + mimei
+	//return newpassword
+}
+func ValidatePassword(Oldpassword string, newpassword string) string {
+	err := bcrypt.CompareHashAndPassword([]byte(Oldpassword), []byte(newpassword))
+	if err != nil {
+		return "失败"
+	}
+	return ""
 }
