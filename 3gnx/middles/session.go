@@ -1,6 +1,7 @@
 package middles
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ import (
 //		return sessionID
 //
 // }
+
 func GetSessionId(c *gin.Context) string {
 	SetSessionId(c)
 	session, err := c.Cookie("session")
@@ -42,6 +44,13 @@ func SetSessionId(c *gin.Context) {
 	bytes := make([]byte, 32)
 
 	// 将随机字节数组转换为 base64 编码字符串
+	_, err := rand.Read(bytes)
+	if err != nil {
+		// 处理生成随机字节数组时的错误
+		log.Println(err.Error())
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	sessionID := base64.URLEncoding.EncodeToString(bytes)
 	// 生成会话标识符
 	//sessionID := "your-session-id"
@@ -80,4 +89,16 @@ func DeleteSessionKey(c *gin.Context, key string) {
 	session.Delete(key)
 	session.Save()
 
+}
+func SetSessionID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取或设置 session ID
+		sessionID := GetSessionId(c)
+
+		// 将 session ID 设置到请求上下文中
+		c.Set("session", sessionID)
+
+		// 调用下一个处理程序
+		c.Next()
+	}
 }

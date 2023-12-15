@@ -170,6 +170,8 @@ func ResetCode(email string, code string, sessionId string) string {
 	}
 
 	if value == code {
+		//设置改密码权限
+		models.UpdateUserStatus(email, 1)
 		// 删除Redis中的键
 		_, err := RedisClient.Del(key).Result()
 		if err != nil {
@@ -190,5 +192,6 @@ func ResetPassword(password string, email string) string {
 	if err != nil {
 		return "修改时出现了错误"
 	}
+	models.UpdateUserStatus(email, 0)
 	return ""
 }

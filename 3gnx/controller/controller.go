@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"3gnx/middles"
 	"3gnx/models"
 	"3gnx/server"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -13,7 +13,7 @@ var newsession string
 // 用户注册并返回信息给客户端
 func UserRegister(c *gin.Context) {
 
-	sessionID := middles.GetSessionId(c)
+	sessionID, _ := c.Cookie("session")
 	//var requestData struct {
 	//	Username string `json:"username"`
 	//	Password string `json:"password"`
@@ -100,7 +100,9 @@ func MangerLogin(c *gin.Context) {
 
 // 注册时发送验证码
 func SendEmailRegister(c *gin.Context) {
-	sessionID := middles.GetSessionId(c)
+	sessionID, _ := c.Cookie("session")
+	fmt.Println(sessionID)
+	//sessionID := middles.GetSessionId(c)
 	var requestData struct {
 		Email string `form:"email" json:"email"`
 	}
@@ -127,7 +129,8 @@ func SendEmailRegister(c *gin.Context) {
 
 // 修改密码时发送验证码
 func SendEmailReSet(c *gin.Context) {
-	sessionID := middles.GetSessionId(c)
+	sessionID, _ := c.Cookie("session")
+	//sessionID := middles.GetSessionId(c)
 	var requestData struct {
 		Email string `form:"email" json:"email"`
 	}
@@ -154,7 +157,8 @@ func SendEmailReSet(c *gin.Context) {
 
 // 邮箱身份验证，然后才能修改密码
 func ResetCodeVerify(c *gin.Context) {
-	sessionID := middles.GetSessionId(c)
+	//sessionID := middles.GetSessionId(c)
+	sessionID, _ := c.Cookie("session")
 	// 获取验证参数
 	var requestData struct {
 		Email string `form:"email" json:"email"`
@@ -172,7 +176,6 @@ func ResetCodeVerify(c *gin.Context) {
 	var restBeanRegister *models.RestBean
 	if result == "" {
 		// 在会话中设置重置密码的相关属性
-		newsession = sessionID + "reset-password"
 		//middles.SetSessionAttribute(c, "reset-password", requestData.Email)
 		restBeanRegister = models.SuccessRestBean()
 
@@ -186,9 +189,12 @@ func ResetCodeVerify(c *gin.Context) {
 
 // 修改密码
 func ResetPassword(c *gin.Context) {
+
+	//sessionID, _ := c.Cookie("session")
 	// 获取重置密码参数
 	var requestData struct {
 		Password string `form:"password" json:"password"`
+		Email    string `form:"email" json:"email"`
 	}
 
 	if err := c.ShouldBind(&requestData); err != nil {
@@ -197,17 +203,28 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	// 从会话中获取重置密码的属性
-	email := middles.GetSessionAttribute(c, "reset-password")
-	emailString, _ := email.(string)
+	//email := middles.GetSessionAttribute(c, "reset-password")
+	// 将邮箱地址转换为字符串
+	//emailString, _ := email.(string)
+	//var emailinit  =  strings.Index(newsession,"reset-password")
+	//for i:=emailinit+14;i<len(sessionID)
 	var restBeanRegister *models.RestBean
-	if email == nil {
-		restBeanRegister = models.FailureRestBeanWithData(http.StatusBadRequest, "清先验证邮箱身份")
-	} else if server.ResetPassword(requestData.Password, emailString) == "" {
-		middles.DeleteSessionKey(c, "reset-password")
-		restBeanRegister = models.SuccessRestBeanWithData("密码重置成功")
+	//if email == nil {
+	//	restBeanRegister = models.FailureRestBeanWithData(http.StatusBadRequest, "清先验证邮箱身份")
+	status, _ := models.GetStatusByEmail(requestData.Email)
+	fmt.Println(status)
+	if status == 1 {
+		if server.ResetPassword(requestData.Password, requestData.Email) == "" {
+			//middles.DeleteSessionKey(c, "reset-password")
+			restBeanRegister = models.SuccessRestBeanWithData("密码重置成功")
+			models.UpdateUserStatus(requestData.Email, 0)
+		} else {
+			restBeanRegister = models.FailureRestBeanWithData(500, "内部错误，请联系管理员")
+		}
 	} else {
-		restBeanRegister = models.FailureRestBeanWithData(500, "内部错误，请联系管理员")
+		restBeanRegister = models.FailureRestBeanWithData(http.StatusBadRequest, "请先完成邮箱认证")
 	}
+
 	//返回结果给前端
 	c.JSON(restBeanRegister.Status, restBeanRegister)
 }

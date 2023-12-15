@@ -1,6 +1,8 @@
 package models
 
-import "3gnx/dao"
+import (
+	"3gnx/dao"
+)
 
 type User struct {
 	Id       int    `json:"id"`
@@ -49,7 +51,20 @@ func UpdateUserPasswordByEmail(email string, password string) error {
 	}
 	return nil
 }
+func UpdateUserStatus(email string, status int) error {
+	err := dao.DB.Table("users").Where("email = ?", email).Update("status", status).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func DeleteATodo(id string) (err error) {
 	err = dao.DB.Table("users").Where("id=?", id).Delete(&User{}).Error
 	return
+}
+func GetStatusByEmail(email string) (int, string) {
+	user := new(User)
+	dao.DB.Debug().Table("users").Where("email=?", email).First(&user)
+	//fmt.Println(user.Status)
+	return user.Status, ""
 }
