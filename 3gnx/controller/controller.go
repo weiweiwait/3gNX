@@ -4,6 +4,7 @@ import (
 	"3gnx/models"
 	"3gnx/server"
 	"fmt"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -14,14 +15,6 @@ var newsession string
 func UserRegister(c *gin.Context) {
 
 	sessionID, _ := c.Cookie("session")
-	//var requestData struct {
-	//	Username string `json:"username"`
-	//	Password string `json:"password"`
-	//	Class    string `json:"class"`
-	//	Xuehao   string `json:"xuehao"`
-	//	Email    string `json:"email"`
-	//	Code     string `json:"code"`
-	//}
 	var requestData struct {
 		Username string `form:"username" json:"username"`
 		Password string `form:"password" json:"password"`
@@ -100,6 +93,8 @@ func MangerLogin(c *gin.Context) {
 
 // 注册时发送验证码
 func SendEmailRegister(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Save()
 	sessionID, _ := c.Cookie("session")
 	fmt.Println(sessionID)
 	//sessionID := middles.GetSessionId(c)
@@ -227,4 +222,142 @@ func ResetPassword(c *gin.Context) {
 
 	//返回结果给前端
 	c.JSON(restBeanRegister.Status, restBeanRegister)
+}
+
+// 学生报名成功并返回信息给客户端
+func StudentApplySuccess(c *gin.Context) {
+	var requestData struct {
+		Username  string `form:"username" json:"username"`
+		Xuehao    string `form:"xuehao" json:"xuehao"`
+		Class     string `form:"class" json:"class"`
+		Direction string `form:"direction" json:"direction"`
+	}
+	if err := c.ShouldBind(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+
+	// 调用AddByRegistration函数进行报名
+	result := server.AddByRegistration(requestData.Username, requestData.Xuehao, requestData.Class, requestData.Direction)
+	// 封装注册结果为RestBean对象
+	var restBeanRegister *models.RestBean
+	if result == "" {
+		restBeanRegister = models.SuccessRestBeanWithData("报名成功")
+
+	} else {
+		restBeanRegister = models.FailureRestBeanWithData(http.StatusBadRequest, result)
+	}
+	//返回注册结果给前端
+	c.JSON(restBeanRegister.Status, restBeanRegister)
+}
+
+// 查询一面通过的人数并返回给前端
+func GetApplyStuListOne(c *gin.Context) {
+	// 查询todo这个表里的所有数据
+	ApplyStuList, err := models.GetAllApplyUserOne()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, ApplyStuList)
+	}
+}
+
+// 查询二面通过的人数并返回给前端
+func GetApplyStuListTwo(c *gin.Context) {
+	// 查询todo这个表里的所有数据
+	ApplyStuList, err := models.GetAllApplyUserTwo()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, ApplyStuList)
+	}
+}
+
+// 学生查询自己的一面情况
+func StuGetApplyStuListOne(c *gin.Context) {
+	var requestData struct {
+		Xuehao string `form:"xuehao" json:"xuehao"`
+	}
+	if err := c.ShouldBind(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+	// 查询表里的面试数据
+	status, err := models.GetStatusByXuehaoAndStatusOne(requestData.Xuehao)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		if status >= 1 {
+			c.JSON(http.StatusOK, gin.H{"Status": "一面已通过"})
+		} else if status == 0 {
+			c.JSON(http.StatusOK, gin.H{"Status": "正在审核"})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"Status": "一面未通过"})
+		}
+
+	}
+}
+
+// 学生查询自己的er面情况
+func StuGetApplyStuListTwo(c *gin.Context) {
+	var requestData struct {
+		Xuehao string `form:"xuehao" json:"xuehao"`
+	}
+	if err := c.ShouldBind(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+	// 查询表里的面试数据
+	status, err := models.GetStatusByXuehaoAndStatusTwo(requestData.Xuehao)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		if status >= 2 {
+			c.JSON(http.StatusOK, gin.H{"Status": "二面已通过"})
+		} else if status == 0 {
+			c.JSON(http.StatusOK, gin.H{"Status": "请等待一面结果"})
+		} else if status == 1 {
+			c.JSON(http.StatusOK, gin.H{"Status": "二面正在审核"})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"Status": "面试失败"})
+		}
+
+	}
+}
+
+// 设置一面通过
+func SetOneSuccessfully(c *gin.Context) {
+	var requestData struct {
+		Xuehao string `form:"xuehao" json:"xuehao"`
+	}
+	if err := c.ShouldBind(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+	//开始设置
+	err := models.SetOneSuccess(requestData.Xuehao)
+	models.SetFailure()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"Status": "设置成功"})
+	}
+}
+
+// 设置二面通过
+func SetTwoSuccessfully(c *gin.Context) {
+	var requestData struct {
+		Xuehao string `form:"xuehao" json:"xuehao"`
+	}
+	if err := c.ShouldBind(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
+		return
+	}
+	//开始设置
+	err := models.SetTwoSuccess(requestData.Xuehao)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"Status": "设置成功"})
+	}
 }

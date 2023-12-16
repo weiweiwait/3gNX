@@ -195,3 +195,20 @@ func ResetPassword(password string, email string) string {
 	models.UpdateUserStatus(email, 0)
 	return ""
 }
+
+// 用户报名存入新表
+func AddByRegistration(username string, xuehao string, class string, direction string) string {
+	Applyuser := models.Student{
+		Username:  username,
+		Xuehao:    xuehao,
+		Class:     class,
+		Direction: direction,
+		Status:    0,
+	}
+	err := models.CreateApplyUser(&Applyuser)
+	if err != nil {
+		return "内部错误，请联系管理员"
+	}
+
+	return "" // 注册成功，返回空字符串表示成功
+}

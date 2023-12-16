@@ -2,7 +2,6 @@ package main
 
 import (
 	"3gnx/dao"
-	"3gnx/middles"
 	"3gnx/routers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -12,10 +11,10 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.Use(middles.SetSessionID())
+	//	router.Use(middles.SetSessionID())
 	// 设置 gin-contrib/sessions 中间件
-	store := cookie.NewStore([]byte("your-secret-key"))
-	router.Use(sessions.Sessions("session", store))
+	store := cookie.NewStore([]byte("secret"))      // 设置session存储
+	router.Use(sessions.Sessions("session", store)) // 注册session中间件
 	// 使用cors中间件，允许所有来源访问
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},              // 允许所有来源

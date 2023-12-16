@@ -15,7 +15,7 @@ type User struct {
 }
 
 /*
-	Todo这个Model的增删改查操作都放在这里
+	User这个Model的增删改查操作都放在这里
 */
 // CreateATodo 创建user
 func CreateAUser(user *User) (err error) {
